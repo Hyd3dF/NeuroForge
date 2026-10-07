@@ -119,12 +119,12 @@ The plan defines how each of these is measured (`12`) and what result stops the 
 
 | Milestone | Status |
 |---|---|
-| M0 Scaffolding & config | not started |
-| M1 Interface + SEF + generators | not started |
-| M2 Memory | not started |
-| M3 Epistemics core | not started |
+| M0 Scaffolding & config | **done** (Batch 1) |
+| M1 Interface + SEF + generators | **done** (Batch 1) |
+| M2 Memory | **done** (Batch 1; tiers T1 only, re-layout in M7) |
+| M3 Epistemics core | **done** (Batch 1) |
 | M4 Primitives + Composer + Body | not started |
-| M5 Ingestion + intake + Mouth (templates/unparsers) | not started |
+| M5 Ingestion + intake + Mouth (templates/unparsers) | partial: triage ingestion + factual path done (Batch 1) |
 | M6 Control | not started |
 | M7 Learning (CFE, online, sleep, compilation) | not started |
 | M8 Component system | not started |

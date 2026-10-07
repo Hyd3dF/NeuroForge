@@ -60,7 +60,7 @@ This directory is the **single source of truth** for implementation. Code must f
 | `T_max` | Maximum beats per query | 64 |
 | `k_ret` | Stage-1 retrieval candidates | 64 |
 | `k_align` | Stage-2 alignment survivors | 8 |
-| `W` | Evidence prior weight | 2.0 |
+| `W` | Evidence prior weight (D-021) | 0.15 |
 | `θ_commit` | Commit belief threshold | 0.80 |
 | `θ_retract` | Retraction disbelief threshold | 0.60 |
 | `θ_abstain` | Minimum belief to answer (scaled by stakes) | 0.70 |

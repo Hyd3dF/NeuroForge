@@ -119,3 +119,25 @@ Format: `D-NNN — title`. Each entry gives the status, the decision, the reason
 - **Decision:** every goal owns a hypothesis set over candidate answer bindings plus RESIDUAL. UNKNOWN-ABSENT requires a missing Sketch key that is also not present in the input and not derivable by any rule or procedure producing its relation.
 - **Reason:** prevents premature "I don't know" when the answer can be derived rather than recalled.
 - **Affects:** `06` §6.0.
+
+### D-021 — Evidence calibration: W = 0.15, θ_conflict_mass = 0.5
+- **Status:** accepted (Batch 1 implementation)
+- **Problem found:** with the original defaults `W = 2.0` and `κ = 1.0`, one fully trusted source gives `b = 0.9/(0.9+2) = 0.31`. `θ_commit = 0.80` was then unreachable without about 8 independent trusted sources, so nothing could ever be KNOWN. This contradicted `02` §10 (one curated source should be strong evidence).
+- **Correction:** `W = 0.15`. One curated source (t = 0.9) gives `b = 0.857 ≥ θ_answer(0.5) = 0.825`; one web source (0.5) gives `b = 0.77` (INSUFFICIENT alone); two independent web sources give `b = 0.87`. `θ_conflict_mass` is scaled to 0.5 to match. Added `remembered_single_source_min_trust = 0.85` to make the "high-trust single source" clause of `06` §5 configurable.
+- **Affects:** `09` §3.1, `04` §9, README symbols. Implemented in `srm/config/build_config.py`; tested in `tests/test_epistemics.py`.
+
+### D-022 — Decision procedure: CONTESTED step, INSUFFICIENT catch-all, OPEN_QUESTION sketch keys
+- **Status:** accepted (Batch 1 implementation)
+- **Problems found:** (1) CONTESTED was listed as a state but no step produced it. (2) An untainted hypothesis with `θ_predict ≤ b < θ_answer` matched no step. (3) A declared unknown with no facts has no Sketch key, so step 1 (UNKNOWN-ABSENT) fired before step 2 (UNKNOWN-DECLARED) could.
+- **Correction:** explicit CONTESTED step; INSUFFICIENT as the final catch-all; OPEN_QUESTION records register their keys in the Sketch.
+- **Affects:** `06` §6, `04` §7. Implemented in `srm/prediction/decision.py`, `srm/memory/system.py`.
+
+### D-023 — Environment: Python 3.13, PyTorch from PyPI
+- **Status:** accepted (Batch 1 implementation)
+- **Decision:** the reference environment is Python 3.13 with PyTorch 2.x from PyPI (the PyTorch CPU wheel index is not reachable from the build environment). Batch 1 uses no torch; learned components (M9) use torch on CPU when no GPU is present.
+- **Affects:** `14` §1.
+
+### D-024 — Model-side ingestion lives in `srm/ingest/`
+- **Status:** accepted (Batch 1 implementation)
+- **Decision:** triage and SEF→memory operations (`02` §9) are a separate package `srm/ingest/` rather than part of `srm/data/` (offline conversion) or `srm/perception/` (raw input). This keeps offline data tooling separate from model components.
+- **Affects:** `14` §2.

@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuroforge-srm"
+version = "0.1.0"
+description = "Final SRM (Sparse Recruitment Machine) — reference implementation of the NeuroForge architecture plan"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=1.26",
+  "pydantic>=2.5",
+  "pyarrow>=14",
+  "safetensors>=0.4",
+  "sympy>=1.12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "hypothesis>=6"]
+torch = ["torch>=2.1"]
+
+[tool.setuptools.packages.find]
+include = ["srm*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

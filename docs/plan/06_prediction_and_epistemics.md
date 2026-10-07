@@ -97,16 +97,18 @@ Verifier entailment alone adds evidence but does **not** remove taint, because t
 - **Goal keys:** the Sketch keys implied by the goal pattern: each bound entity `(e)`, each `(e, relation)` pair, each `(concept)` and `(concept, property)` mentioned, and the normalized alias of every unlinked surface form.
 - **Derivability check:** before declaring a key absent-and-unsuppliable, REGRESS is queried with the key's relation. If any procedure, causal schema or rule exists whose output can produce that relation (a rule-index lookup by `relation_id`), the key is treated as *derivable* and step 1 does not fire.
 
-Given goal `g` with answer variables and its hypothesis set:
+Given goal `g` with answer variables and its hypothesis set (evaluated in this order; D-022):
 1. If any goal key is absent in the Knowledge Sketch, is not present in the current input, and is not derivable (§6.0) → **UNKNOWN-ABSENT**.
-2. If the pattern unifies with an OPEN_QUESTION and there is no newer untainted evidence → **UNKNOWN-DECLARED**.
-3. Let `h*` = the hypothesis with the highest Support.
-   - **KNOWN-class answer** if: `b(h*) ≥ θ_answer(stakes)`, **and** `h*` is untainted, **and** its justification DAG has a path to OBSERVED / REMEMBERED / TESTED leaves, **and** there is no unresolved contradiction in its channel, **and** `Support(h*) − Support(h_2) ≥ δ_margin` (F0 1.0). The state is OBSERVED, REMEMBERED, DERIVED or TESTED accordingly.
-   - Otherwise, if `h*` is tainted but within envelope and `b(h*) ≥ θ_predict` (F0 0.5) → **PREDICTION-class answer** (rendered as a prediction with its evidence).
-   - If several hypotheses are within `δ_margin` of each other → **ambiguous**: render the leading hypotheses with their evidence, or a conditional answer if they lie in different channels.
-4. If relevant records exist but `b(h*) < θ_predict` → **INSUFFICIENT**.
-5. If no applicable record exists and every candidate generator is out of envelope → **UNKNOWN-NO-BASIS**.
-6. If the budget is exhausted before steps 3–5 apply → **UNRESOLVED**.
+2. If the pattern unifies with an OPEN_QUESTION and no untainted hypothesis has `b ≥ θ_commit` → **UNKNOWN-DECLARED**.
+3. If there are no non-residual hypotheses → **UNRESOLVED** if the budget ran out with derivations pending, otherwise **UNKNOWN-NO-BASIS**.
+4. Let `h*` = the hypothesis with the highest Support and `h_2` the runner-up (the RESIDUAL included).
+   - **CONTESTED** if `h*` is involved in an unresolved contradiction.
+   - **KNOWN-class answer** if: `b(h*) ≥ θ_answer(stakes)`, **and** `h*` is untainted, **and** its justification DAG has a path to OBSERVED / REMEMBERED / TESTED leaves, **and** `Support(h*) − Support(h_2) ≥ δ_margin`. The state is OBSERVED, REMEMBERED, DERIVED or TESTED accordingly.
+   - **AMBIGUOUS** if other non-residual hypotheses lie within `δ_margin` of `h*` and `b(h*) ≥ θ_predict`: render the leading hypotheses with their evidence, or a conditional answer if they lie in different channels.
+   - **PREDICTION-class answer** if `h*` is tainted but within its envelope and `b(h*) ≥ θ_predict`.
+5. If every non-residual hypothesis is out of envelope (EXTRAPOLATED only) → **UNKNOWN-NO-BASIS**.
+6. If the budget is exhausted with derivations pending → **UNRESOLVED**.
+7. Otherwise (relevant hypotheses exist but none qualifies, e.g. untainted with `θ_predict ≤ b < θ_answer`) → **INSUFFICIENT**. This catch-all closes a gap in the original procedure, which left untainted hypotheses below `θ_answer` without a state.
 
 **Stakes scaling:** `θ_answer(stakes) = θ_abstain + (θ_max − θ_abstain) · stakes` (F0 `θ_abstain` = 0.70, `θ_max` = 0.95).
 

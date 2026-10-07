@@ -158,7 +158,8 @@ Structural alignment (`05` §6) runs on at most `k_align` survivors.
 ## 7. Knowledge Sketch
 - **Structure:** a counting Bloom filter over keys `(entity_id)`, `(entity_id, relation_id)`, `(concept_id)`, `(concept_id, property_id)`, plus normalized alias strings.
 - **Sizing:** `m = ⌈−n ln p / (ln 2)²⌉` counters and `k = ⌈(m/n) ln 2⌉` hashes, for the target false-positive rate `p` (F0 1e-3) and expected key count `n`. 4-bit counters.
-- **Semantics:** if any counter is 0, the key was **never stored** → UNKNOWN-ABSENT (no false negatives). Writes increment and tombstones decrement.
+- **Semantics:** if any counter is 0, the key was **never stored** → UNKNOWN-ABSENT (no false negatives). Writes increment and tombstones decrement. Saturated counters (15) are never decremented, which keeps the no-false-negative guarantee.
+- **OPEN_QUESTION keys (D-022):** a declared unknown is stored knowledge about its `(entity, relation)` key, so OPEN_QUESTION records add their keys to the Sketch. Otherwise step 1 of the decision procedure would report UNKNOWN-ABSENT before step 2 could report UNKNOWN-DECLARED.
 - **Invariant:** every ENGRAM, CONCEPT and ENTITY write updates the sketch in the same transaction (`10` §6 checks this). Facts may live **only** in engrams (the fact-placement rule, `06` §8).
 
 ## 8. Hippocampal Index
@@ -176,7 +177,7 @@ Structural alignment (`05` §6) runs on at most `k_align` survivors.
 | CORROBORATED → USED | Contributed to ≥ `n_use` (F0 2) committed answers that were not later retracted |
 | USED → CONSOLIDATED | Integrated during sleep (written into a Library region) |
 | CONSOLIDATED → STABLE | Age ≥ `n_sleep_stable` sleep cycles with no contrary evidence, and usage ≥ `n_stable_use` |
-| any → CONTESTED | Both `e⁺` and `e⁻` ≥ `θ_conflict_mass` (F0 1.0), or an unresolved contradiction |
+| any → CONTESTED | Both `e⁺` and `e⁻` ≥ `θ_conflict_mass` (F0 0.5, D-021), or an unresolved contradiction |
 | CONTESTED → (prior stage) | Contradiction resolved with a trust gap ≥ `θ_trust_gap` |
 | any → DEPRECATED | `d ≥ θ_retract` with strong evidence, or superseded by a corrected version (kept for provenance) |
 | NEW → DECAYED | Not consolidated, low priority, past `T_decay` |

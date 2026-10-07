@@ -84,8 +84,8 @@ Written by the developer, validated before any build, and never mutated by train
 | `memory` | `N_lib`, `N_hip`, `page_records`, `tiers_enabled`, `S_context`, `cand_max`, `k_ret`, `index_backend` | | sweep, 1e5, 4096, [T1, T2], 4, 4096, 64, banded_sparse |
 | | `sketch_fpr`, `h_spread`, `k_spread`, `η_H`, `η_decay`, `w_max` | | 1e-3, 2, 256, 0.05, 0.001, 1.0 |
 | `workspace` | `K`, `R`, `H`, `A`, `G_max`, `HS_max`, `NG_max` | int | 64, 32, 8, 3, 8, 16, 1024 |
-| `epistemics` | `W`, `κ`, `κ_v`, `κ_t`, `θ_commit`, `θ_retract`, `θ_abstain`, `θ_max`, `θ_predict`, `δ_margin`, `π_cap`, `r_extrap`, `t_norm` | | 2.0, 1.0, 1.0, 2.0, 0.80, 0.60, 0.70, 0.95, 0.5, 1.0, 1.0, 0.3, min |
-| | `trust_priors` (table), `modality_factors` (table), `θ_trust_gap`, `θ_conflict_mass` | | `02` §10, 0.3, 1.0 |
+| `epistemics` | `W`, `κ`, `κ_v`, `κ_t`, `θ_commit`, `θ_retract`, `θ_abstain`, `θ_max`, `θ_predict`, `δ_margin`, `π_cap`, `r_extrap`, `t_norm` | | 0.15 (D-021), 1.0, 1.0, 2.0, 0.80, 0.60, 0.70, 0.95, 0.5, 1.0, 1.0, 0.3, min |
+| | `trust_priors` (table), `modality_factors` (table), `θ_trust_gap`, `θ_conflict_mass`, `remembered_single_source_min_trust` | | `02` §10, 0.3, 0.5 (D-021), 0.85 |
 | | `allow_verifier_promotion_low_stakes` | bool | false |
 | `core` | `D_max`, `E_max`, `k_align`, `t_align`, `θ_schema`, `θ_analogy`, `θ_parent`, verifier width/layers, composer width/layers | | 8, 512, 8, 5, 0.6, 0.6, 0.5, 256/3, 256/3 |
 | `prediction` | `k_env`, `n_min`, `θ_env`, `λ_res`, `λ_res0` | | 16, 20, 0.8, 1.0, 1.0 |
