@@ -168,7 +168,7 @@ class EpistemicsConfig(_Section):
     t_norm: str = "min"
     trust_priors: dict[str, float] = Field(
         default_factory=lambda: {
-            "generator_truth": 1.00, "tool_execution": 0.99, "curated_kb": 0.90,
+            "generator_truth": 1.00, "task_given": 1.00, "tool_execution": 0.99, "curated_kb": 0.90,
             "reference_doc": 0.85, "textbook": 0.85, "api_docs": 0.85,
             "code_repository": 0.75, "user_statement": 0.70, "web_document": 0.50,
             "forum": 0.40, "third_party_component": 0.30, "model_output": 0.20,
@@ -187,7 +187,7 @@ class EpistemicsConfig(_Section):
     remembered_single_source_min_trust: float = 0.85
     lambda_c: float = 2.0
     lambda_v: float = 0.5
-    lambda_mdl: float = 0.0
+    lambda_mdl: float = 0.1
     lambda_p: float = 1.0
     llr_eps: float = 1e-4
     allow_verifier_promotion_low_stakes: bool = False
@@ -210,6 +210,13 @@ class CoreConfig(_Section):
     composer_layers: int = 3
     lambda_cost: float = 0.01
     lambda_depth: float = 0.1
+    z_match: float = 2.5
+    lambda_miss: float = 0.5
+    synth_max_size: int = 7
+    synth_evals_per_beat: int = 20_000
+    synth_max_evals: int = 400_000
+    simulate_probes: int = 24
+    procedure_min_cues: int = 2
 
 
 class PredictionConfig(_Section):
@@ -234,6 +241,19 @@ class ControlConfig(_Section):
     c_max: float = 2.0
     stakes_gain: float = 1.0
     ne_gain: float = 0.5
+    op_flops: dict[str, float] = Field(
+        default_factory=lambda: {
+            "LINK": 1e5, "JOIN_HOP": 5e5, "ANSWER": 1e5, "SYNTH_DSL_EVAL": 2e3, "TEST": 1e5,
+            "SIMULATE": 5e5, "MATCH_PROCEDURE": 5e5, "BIND_QUANTITIES": 1e5, "EVAL_FORMULA": 2e5,
+            "CHECK": 2e5, "ALGEBRA": 5e5, "PY_CHECK": 1e6, "GATE": 5e4, "SUBCONSCIOUS": 2e5,
+        }
+    )
+    type_prior: dict[str, float] = Field(
+        default_factory=lambda: {
+            "test": 1.0, "answer": 0.95, "retrieve": 0.9, "transform": 0.85, "synthesis": 0.7,
+            "simulate": 0.6, "background": 0.3,
+        }
+    )
     prices: dict[str, float] = Field(
         default_factory=lambda: {
             "flops": 1e-9, "bytes": 1e-8, "slots": 0.01, "verifier_calls": 0.05,

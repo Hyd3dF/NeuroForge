@@ -141,3 +141,31 @@ Format: `D-NNN — title`. Each entry gives the status, the decision, the reason
 - **Status:** accepted (Batch 1 implementation)
 - **Decision:** triage and SEF→memory operations (`02` §9) are a separate package `srm/ingest/` rather than part of `srm/data/` (offline conversion) or `srm/perception/` (raw input). This keeps offline data tooling separate from model components.
 - **Affects:** `14` §2.
+
+### D-025 — ALIGN uses greedy one-to-one assignment in F0
+- **Status:** accepted (Batch 2)
+- **Decision:** after Sinkhorn normalization, correspondences are taken greedily by descending normalized affinity, subject to `θ_pair`, instead of the Hungarian algorithm named in `05` §6.2.
+- **Reason:** scene graphs in F0 are small (≤ ~20 nodes); greedy assignment on a Sinkhorn-normalized matrix matches Hungarian on the test cases and avoids a SciPy dependency. Revisit if alignment F1 on larger graphs falls short (S3 acceptance).
+- **Affects:** `05` §6.2. Implemented in `srm/core/primitives.py`.
+
+### D-026 — Task-given premises carry `task_given` trust (1.0)
+- **Status:** accepted (Batch 2)
+- **Problem found:** quantities stated in a word problem were OBSERVED claims with `user_statement` trust (0.7), so `b = 0.82 < θ_answer`. A correct deduction from the problem's own premises could never be KNOWN.
+- **Correction:** premises supplied by the request itself (quantities, examples, specifications) are the task frame, not assertions about the world. They enter as OBSERVED with trust class `task_given = 1.0`. Facts that users assert about the world keep `user_statement` trust.
+- **Affects:** `02` §10.1 (new trust class), `09` §3.1. Implemented in `srm/runtime/context.py`.
+
+### D-027 — Synthesis keeps rival solutions; Occam uses true program size
+- **Status:** accepted (Batch 2)
+- **Problems found:** (1) observational-equivalence pruning discarded alternative programs that agree on the examples, which are exactly the rival hypotheses Support must compare. (2) Library procedures enter the search at size 1 (the intended amortization), so search stopped before simpler fresh programs were considered, and an over-fitted library program was reported as KNOWN.
+- **Correction:** solutions are collected before pruning. When the first solution is small (≤ `alt_max_size`), one extra size level is searched for rivals. Rivals are grouped by behaviour on Simulator probe inputs. The description-length term uses each program's true expanded size. Genuinely under-determined tasks are now reported as AMBIGUOUS instead of KNOWN.
+- **Affects:** `05` §5.2, `06` §4. Implemented in `srm/core/synthesis.py`, `srm/core/ops.py`.
+
+### D-028 — Pre-S2 perception encoder and L0 gate
+- **Status:** accepted (Batch 2)
+- **Decision:** until stage S2 trains the neural perception encoder, chunks are encoded by a deterministic hashed bag of words and character trigrams. The L0 predictor is a running average, so its error does not gate recognition until a trained predictor is installed (`trained_l0`). The interface to the rest of the system is unchanged.
+- **Affects:** `03` §7. Implemented in `srm/perception/encoder.py`.
+
+### D-029 — Python-rendering check contributes evidence and never blocks
+- **Status:** accepted (Batch 2)
+- **Decision:** PY_CHECK runs the Python rendering of a DSL solution through the Body test runner. A failure adds evidence against the solution claim (lowering its belief) instead of failing the circuit, so the decision procedure, not a hard failure, decides how to present it. The F0 subset allows `dict.fromkeys` (pure).
+- **Affects:** `07` §5.2, `02` §14.2.

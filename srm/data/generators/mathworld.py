@@ -9,7 +9,7 @@ import sympy as sp
 
 from srm.data.generators.common import GenContext
 from srm.data.io import Dataset
-from srm.data.sef import TaskRecord, Verifier
+from srm.data.sef import ProcedureRecord, ProcedureStep, TaskRecord, TypedPort, Verifier
 
 VERSION = "0.1"
 CATEGORY = "synthetic/mathworld"
@@ -76,11 +76,45 @@ TEMPLATES: dict[str, Template] = {
 }
 
 
+# Word-problem procedures as knowledge (02 §4.8): formula, input binding cues and recognition cues.
+PROCEDURES: dict[str, dict[str, object]] = {
+    "rate": {"goal": "distance travelled", "formula": "r*t", "unit": "km",
+             "bind": {"r": r"(\d+) km per hour", "t": r"for (\d+) hours"},
+             "cues": ["travels", "km per hour", "how far"]},
+    "cost": {"goal": "total cost", "formula": "n*p", "unit": "dollars",
+             "bind": {"n": r"buys (\d+) \w+s at", "p": r"at (\d+) dollars each"},
+             "cues": ["buys", "dollars each", "how much"]},
+    "share": {"goal": "share per person", "formula": "n/k", "unit": "",
+              "bind": {"n": r"^(\d+) \w+s are shared", "k": r"among (\d+) friends"},
+              "cues": ["shared equally", "each friend"]},
+    "work": {"goal": "days needed", "formula": "a*d/w", "unit": "days",
+             "bind": {"a": r"^(\d+) workers build", "d": r"in (\d+) days", "w": r"do (\d+) workers need"},
+             "cues": ["workers", "build a wall", "days"]},
+    "discount": {"goal": "discounted price", "formula": "p*(100-q)/100", "unit": "dollars",
+                 "bind": {"p": r"costs (\d+) dollars", "q": r"discounted by (\d+) percent"},
+                 "cues": ["discounted", "percent", "new price"]},
+    "two_step": {"goal": "items left", "formula": "a+b-c", "unit": "",
+                 "bind": {"a": r"has (\d+) \w+s, buys", "b": r"buys (\d+) more", "c": r"gives away (\d+)"},
+                 "cues": ["buys", "more", "gives away", "left"]},
+}
+
+
 def generate(dataset_id: str = "math", seed: int = 0, n_problems: int = 1_000, perturbed_fraction: float = 0.1,
              algebra_fraction: float = 0.2) -> Dataset:
     ctx = GenContext(dataset_id, seed, "mathworld", VERSION)
     rng = ctx.rng
     src = ctx.source("gen", "generator_truth", category=CATEGORY)
+    for name, spec in PROCEDURES.items():
+        ctx.add(ProcedureRecord(
+            record_id=ctx.rid("procedure"), source_id=src, data_category=CATEGORY, extraction=ctx.extraction(),
+            procedure_id=f"proc:math/word/{name}", goal=str(spec["goal"]), domain="math/word",
+            inputs=[TypedPort(name=k, type="number") for k in spec["bind"]],  # type: ignore[union-attr]
+            outputs=[TypedPort(name="answer", type="number")],
+            steps=[ProcedureStep(step_id="s1", action=f"compute {spec['formula']}", op={
+                "formula": spec["formula"], "bind": spec["bind"], "cues": spec["cues"], "unit": spec["unit"],
+                "signature": "math:number",
+            })],
+        ))
     x = sp.Symbol("x")
     names = list(TEMPLATES)
     for i in range(n_problems):

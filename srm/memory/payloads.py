@@ -75,6 +75,50 @@ class OpenQuestionPayload:
 
 
 @dataclass
+class ProcedurePayload:
+    """An explicit, inspectable recipe (04 §2.4): a circuit template, DSL program or formula."""
+
+    procedure_id: str
+    domain: str
+    signature: str  # e.g. "dsl:list", "math:number"
+    goal: str = ""
+    inputs: list[dict[str, Any]] = field(default_factory=list)
+    outputs: list[dict[str, Any]] = field(default_factory=list)
+    steps: list[dict[str, Any]] = field(default_factory=list)
+    program: Any = None  # DSL program JSON when the procedure is a compiled solution
+    cues: list[str] = field(default_factory=list)
+    uses: int = 0
+    successes: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @staticmethod
+    def from_dict(d: dict[str, Any]) -> "ProcedurePayload":
+        return ProcedurePayload(**d)
+
+
+@dataclass
+class EpisodePayload:
+    """A task/query episode with its circuit trace and outcome (04 §2.6)."""
+
+    episode_id: str
+    goal: str
+    kind: str
+    outcome: dict[str, Any] = field(default_factory=dict)
+    trace: list[dict[str, Any]] = field(default_factory=list)
+    record_ids: list[int] = field(default_factory=list)
+    replay_priority: float = 1.0
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @staticmethod
+    def from_dict(d: dict[str, Any]) -> "EpisodePayload":
+        return EpisodePayload(**d)
+
+
+@dataclass
 class GenericPayload:
     """Structured payload for kinds whose full schema is implemented in later milestones."""
 
@@ -92,6 +136,8 @@ PAYLOAD_TYPES: dict[RecordKind, type] = {
     RecordKind.ENTITY: EntityPayload,
     RecordKind.ENGRAM: EngramPayload,
     RecordKind.OPEN_QUESTION: OpenQuestionPayload,
+    RecordKind.PROCEDURE: ProcedurePayload,
+    RecordKind.EPISODE: EpisodePayload,
 }
 
 

@@ -19,6 +19,7 @@ from srm.data.sef import (
     EntityRecord,
     FactRecord,
     KnownUnknownRecord,
+    ProcedureRecord,
     PropertyDefRecord,
     RecordBase,
     RelationDefRecord,
@@ -27,12 +28,12 @@ from srm.data.sef import (
 from srm.ingest.encoder import SymbolEncoder
 from srm.interface.messages import Lifecycle, Qualifiers, RecordKind
 from srm.interface.values import Value
-from srm.memory.payloads import EngramPayload, EntityPayload, OpenQuestionPayload
+from srm.memory.payloads import EngramPayload, EntityPayload, OpenQuestionPayload, ProcedurePayload
 from srm.memory.system import HIPPOCAMPUS, MemorySystem
 
 KIND_PRIORITY = {
     "source": 0, "property_def": 1, "relation_def": 1, "entity": 2, "segment": 3,
-    "fact": 4, "known_unknown": 4, "contradiction": 5,
+    "fact": 4, "known_unknown": 4, "procedure": 4, "contradiction": 5,
 }
 NON_ASSERTIONS = ("hypothetical", "fictional", "unknown_declared")
 
@@ -209,6 +210,28 @@ class Ingestor:
             else:
                 for x in (a, b):
                     self.mem.update_lifecycle(x, unresolved_contradiction=True)
+
+    # --- procedures (02 §9.2) ------------------------------------------------------------------------
+    def _on_procedure(self, r: ProcedureRecord) -> None:
+        if r.procedure_id in self.mem.symbols:
+            self.report.outcomes["procedure_known"] += 1
+            return
+        src = self.mem.source(r.source_id or "")
+        op = (r.steps[0].op or {}) if r.steps else {}
+        payload = ProcedurePayload(
+            procedure_id=r.procedure_id, domain=r.domain, signature=op.get("signature", r.domain),
+            goal=r.goal if isinstance(r.goal, str) else "", inputs=[p.model_dump() for p in r.inputs],
+            outputs=[p.model_dump() for p in r.outputs], steps=[s.model_dump(mode="json") for s in r.steps],
+            program=op.get("program"), cues=list(op.get("cues", [])),
+        )
+        ledger = EvidenceLedger()
+        ledger.add(src.root_source_id, initial_evidence(self.cfg.epistemics.kappa, src.trust, r.extraction.confidence, 1.0), 0.0)
+        dense = self.enc.entity(r.procedure_id)
+        rid = self.mem.write(RecordKind.PROCEDURE, r.procedure_id, dense, payload, ledger,
+                             [{"source_id": r.source_id, "root": src.root_source_id, "trust": src.trust, "sef": r.record_id}],
+                             target=HIPPOCAMPUS)
+        self.sef_map[r.record_id] = rid
+        self.report.outcomes["procedure"] += 1
 
     # --- declared unknowns and explicit contradictions ----------------------------------------------
     def _on_known_unknown(self, r: KnownUnknownRecord) -> None:

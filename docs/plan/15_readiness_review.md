@@ -123,9 +123,9 @@ The plan defines how each of these is measured (`12`) and what result stops the 
 | M1 Interface + SEF + generators | **done** (Batch 1) |
 | M2 Memory | **done** (Batch 1; tiers T1 only, re-layout in M7) |
 | M3 Epistemics core | **done** (Batch 1) |
-| M4 Primitives + Composer + Body | not started |
-| M5 Ingestion + intake + Mouth (templates/unparsers) | partial: triage ingestion + factual path done (Batch 1) |
-| M6 Control | not started |
+| M4 Primitives + Composer + Body | **done** (Batch 2) |
+| M5 Ingestion + intake + Mouth (templates/unparsers) | **done** (Batches 1–2; neural renderer in M9) |
+| M6 Control | **done** (Batch 2; heuristic VOC until S4) |
 | M7 Learning (CFE, online, sleep, compilation) | not started |
 | M8 Component system | not started |
 | M9 Learned components | not started |

@@ -26,7 +26,7 @@ from srm.memory import sketch as SK
 from srm.memory.association import AssociationField
 from srm.memory.index import AliasIndex, BandedIndex, DenseIndex, TripleIndex
 from srm.memory.lifecycle import LifecycleInputs, next_lifecycle, plasticity_for
-from srm.memory.payloads import EngramPayload, EntityPayload, OpenQuestionPayload
+from srm.memory.payloads import EngramPayload, EntityPayload, OpenQuestionPayload, ProcedurePayload
 from srm.memory.store import RecordStore, RecordView, make_record_id, split_record_id
 
 HIPPOCAMPUS = 0
@@ -68,6 +68,7 @@ class MemorySystem:
         self.sources: dict[str, SourceInfo] = {}
         self.symbols: dict[str, int] = {}  # symbol id (entity id, concept id) → record id
         self.open_questions: dict[tuple[str, str], list[int]] = {}
+        self.procedures: dict[str, list[int]] = {}  # domain → PROCEDURE record ids
         self.wal: list[dict[str, Any]] = []
         self._dense_index = DenseIndex(i.d_k)
 
@@ -156,6 +157,20 @@ class MemorySystem:
             # D-022: a declared unknown is stored knowledge about the key, so the key is not absent.
             self.sketch.add(SK.key_entity(q.subject))
             self.sketch.add(SK.key_entity_relation(q.subject, q.relation))
+        elif kind == RecordKind.PROCEDURE:
+            pr: ProcedurePayload = payload
+            self.procedures.setdefault(pr.domain, []).append(rid)
+            self.symbols[pr.procedure_id] = rid
+
+    def find_procedures(self, domain: str, signature: str | None = None) -> list[int]:
+        out = []
+        for rid in self.procedures.get(domain, []):
+            st, local = self._loc(rid)
+            if not st.col("alive")[local]:
+                continue
+            if signature is None or st.payloads[local].signature == signature:
+                out.append(rid)
+        return out
 
     def add_evidence(self, record_id: int, root: str, delta_plus: float, delta_minus: float) -> bool:
         st, local = self._loc(record_id)
@@ -340,6 +355,9 @@ class MemorySystem:
                     idx.triples.add_fact(rid, payload.subject, payload.relation, payload.object.key())
                 elif kind == RecordKind.OPEN_QUESTION:
                     ms.open_questions.setdefault((payload.subject, payload.relation), []).append(rid)
+                elif kind == RecordKind.PROCEDURE:
+                    ms.procedures.setdefault(payload.domain, []).append(rid)
+                    ms.symbols[payload.procedure_id] = rid
         ms.sources = {k: SourceInfo(**v) for k, v in state["sources"].items()}
         for s, d, t, w in state["links"]:
             ms.assoc.link(int(s), int(d), t, float(w))

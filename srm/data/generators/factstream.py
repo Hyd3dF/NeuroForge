@@ -170,6 +170,7 @@ def generate(dataset_id: str = "fs", seed: int = 0, n_countries: int = 20, withh
             relation=t.relation, object=value, qualifiers=q,
         )
 
+    hop_state: dict[tuple[str, str], tuple[str, _Truth]] = {}
     for t in truths:
         sc = names[int(rng.choice(len(names), p=probs))]
         # temporal facts are always strongly known (they test interval handling, 02 §11)
@@ -199,6 +200,8 @@ def generate(dataset_id: str = "fs", seed: int = 0, n_countries: int = 20, withh
             ))
         for rec in emitted:
             stream.append((float(rng.random()), rec))
+        if t.interval is None:
+            hop_state[(t.subject, t.relation)] = (sc, t)
         if rng.random() < questions_per_fact:
             questions.append((t, sc))
 
@@ -228,6 +231,43 @@ def generate(dataset_id: str = "fs", seed: int = 0, n_countries: int = 20, withh
     for etype, name in withheld:
         rel = next(r for r, spec in RELATIONS.items() if spec[0] == etype)
         question(name, rel, "UNKNOWN-ABSENT", None, None)
+
+    # multi-hop chains (11 §6.1): rendered as nested "the R of the R2 of X"
+    chains = [("company", ("rel:ceo", "rel:born_in", "rel:located_in")),
+              ("person", ("rel:born_in", "rel:located_in")),
+              ("company", ("rel:headquarters", "rel:located_in"))]
+    known = {"known_strong", "known_web2", "resolved_conflict"}
+    for etype, rels in chains:
+        for eid, ename in entities[etype]:
+            subject, gold, answer = eid, "KNOWN", None
+            for rel in rels:
+                sc_t = hop_state.get((subject, rel))
+                if sc_t is None:
+                    gold = "SKIP"
+                    break
+                sc, t = sc_t
+                if sc == "omitted":
+                    gold = "UNKNOWN-ABSENT"
+                    break
+                if sc not in known:
+                    gold = "SKIP"
+                    break
+                answer = t.value
+                subject = str(t.value.value)
+            if gold == "SKIP":
+                continue
+            phrase = " of the ".join(r.split(":", 1)[1].replace("_", " ") for r in reversed(rels))
+            atoms, var = [], f"@{ename}"
+            for i, rel in enumerate(rels):
+                nxt = "?x" if i == len(rels) - 1 else f"?h{i}"
+                atoms.append(PatternAtom(subject=var, relation=rel, object=nxt))
+                var = nxt
+            ctx.add(QuestionRecord(
+                record_id=ctx.rid("question"), source_id=src["kb"], data_category="eval/factstream",
+                extraction=ctx.extraction(), query=f"What is the {phrase} of {ename}?",
+                pattern=FactPattern(atoms=atoms), gold_state=gold,
+                gold_answer=answer if gold == "KNOWN" else None, split="dev_multihop",
+            ))
 
     ds.meta = {
         "n_entities": sum(len(v) for v in entities.values()),
